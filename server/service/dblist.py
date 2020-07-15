@@ -13,21 +13,23 @@ class DBList():
 
         all_data_table_sql = "select tablename from pg_tables where schemaname='public'"
         cursor.execute(all_data_table_sql)
-        temp_table_name_list = list()
+        tables_list = list()
         for table_name in cursor.fetchall():
-            temp_table_name_list.append(table_name[0])
+            tables_list.append({
+                "name": table_name[0],
+                "struct": []
+            })
         # table struct to dict
-        back_list = list()
-        for table_str in temp_table_name_list:
+        for i in range(len(tables_list)):
             part_table_struct_sql = """SELECT column_name, data_type, is_nullable 
             FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name='{}'
-            """.format(table_str)
+            """.format(tables_list[i]["name"])
             primary_key_sql = """SELECT a.attname, format_type(a.atttypid, a.atttypmod) AS data_type
             FROM pg_index i JOIN pg_attribute a ON a.attrelid = i.indrelid
             AND a.attnum = ANY(i.indkey)
             WHERE i.indrelid = '{}'::regclass
             AND i.indisprimary;
-            """.format(table_str)
+            """.format(tables_list[i]["name"])
             cursor.execute(part_table_struct_sql)
             part_table_list = cursor.fetchall()
             cursor.execute(primary_key_sql)
@@ -42,6 +44,6 @@ class DBList():
                 }
                 if key[0] in primary_key_list:
                     table_struct_data["is_primary"] = True
-                back_list.append(table_struct_data)
-        print(back_list)
-        return back_list
+                tables_list[i]["struct"].append(table_struct_data)
+        print(tables_list)
+        return tables_list
