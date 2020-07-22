@@ -16,10 +16,8 @@ db = SQLAlchemy(app)
 
 class HelloWorld(Resource):
     def get(self):
-        # db.reflect()
-        # print(conn)
-        # print(db.get_tables_for_bind()[0].__table__, '-009-')
-        table_list = DBList().get_table_struct()
+        # table_list = DBList().get_table_struct()
+        table_list = DBList().get_table_struct_for_mysql()
         return {'hello': table_list}
 
 

@@ -1,5 +1,6 @@
 import psycopg2
 import logging
+import pymysql
 
 
 class DBList():
@@ -7,8 +8,7 @@ class DBList():
         def tuple_first(in_tuple):
             return in_tuple[0]
         conn = psycopg2.connect(
-            database="lazyshot", user="wot", password="123", host="127.0.0.1", port="5432")
-
+            database="lazyshot", user="root", password="root", host="127.0.0.1", port="5432")
         cursor = conn.cursor()
 
         all_data_table_sql = "select tablename from pg_tables where schemaname='public'"
@@ -45,5 +45,36 @@ class DBList():
                 if key[0] in primary_key_list:
                     table_struct_data["is_primary"] = True
                 tables_list[i]["struct"].append(table_struct_data)
-        print(tables_list)
+        print(tables_list, '----')
         return tables_list
+    
+    # mysql
+    def get_table_struct_for_mysql(self):
+        def is_primary(field):
+            return True if field == 'PRI' else False
+        con = self.connect_db()
+        cur = con.cursor()
+        cur.execute("DESC shit")
+        data = cur.fetchall()
+        table_item = {
+            "name": 'shit',
+            "struct": []
+        }
+        for i in data:
+            table_item["struct"].append({
+                "name": i[0],
+                "type": i[1],
+                "is_null": i[2],
+                "is_primary": is_primary(i[3])
+            })
+        return table_item
+        # pass
+    
+    # connect
+    def connect_db(self):
+        return pymysql.connect(
+            "localhost",
+            "root",
+            "123456",
+            "lazyshot"
+            )
