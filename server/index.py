@@ -5,7 +5,11 @@ import psycopg2
 
 from service.dblist import DBList
 
+from route.form import forms
+
+
 app = Flask(__name__)
+app.register_blueprint(forms)
 api = Api(app)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://wot:123@127.0.0.1/lazyshot'
@@ -18,6 +22,7 @@ class HelloWorld(Resource):
     def get(self):
         # table_list = DBList().get_table_struct()
         table_list = DBList().get_table_struct_for_mysql()
+        
         return {'hello': table_list}
 
 
