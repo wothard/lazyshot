@@ -75,6 +75,6 @@ class DBList():
         return pymysql.connect(
             "localhost",
             "root",
-            "123456",
+            "root",
             "lazyshot"
             )
