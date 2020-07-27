@@ -33,8 +33,8 @@ class DBList():
             cursor.execute(part_table_struct_sql)
             part_table_list = cursor.fetchall()
             cursor.execute(primary_key_sql)
-            primary_key_list = list(map(tuple_first, cursor.fetchall())) 
-            
+            primary_key_list = list(map(tuple_first, cursor.fetchall()))
+
             for key in part_table_list:
                 table_struct_data = {
                     "name": key[0],
@@ -47,29 +47,34 @@ class DBList():
                 tables_list[i]["struct"].append(table_struct_data)
         print(tables_list, '----')
         return tables_list
-    
+
     # mysql
     def get_table_struct_for_mysql(self):
+        init_table_list = list()
         def is_primary(field):
             return True if field == 'PRI' else False
         con = self.connect_db()
         cur = con.cursor()
-        cur.execute("DESC shit")
-        data = cur.fetchall()
-        table_item = {
-            "name": 'shit',
-            "struct": []
-        }
-        for i in data:
-            table_item["struct"].append({
-                "name": i[0],
-                "type": i[1],
-                "is_null": i[2],
-                "is_primary": is_primary(i[3])
-            })
-        return table_item
-        # pass
-    
+        cur.execute("SHOW tables")
+        back_table_list = cur.fetchall()
+        for table_one in back_table_list:
+            cur.execute("DESC {}".format(table_one[0]))
+            data = cur.fetchall()
+            # set back table struct
+            table_item = {
+                "name": 'shit',
+                "struct": []
+            }
+            for i in data:
+                table_item["struct"].append({
+                    "name": i[0],
+                    "type": i[1],
+                    "is_null": i[2],
+                    "is_primary": is_primary(i[3])
+                })
+            init_table_list.append(table_item)
+        return init_table_list
+
     # connect
     def connect_db(self):
         return pymysql.connect(
@@ -77,4 +82,4 @@ class DBList():
             "root",
             "root",
             "lazyshot"
-            )
+        )

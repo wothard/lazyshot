@@ -12,12 +12,23 @@ dbs = Blueprint('dblist', __name__, url_prefix="/db")
 def index():
     print(form.struct)
     return form.struct.FormStruct().incorporate_field([{
-        "text": "fdgs", 
+        "text": "fdgs",
         "lang_type": "golang",
         "type": "int"
-        }])
+    }])
+
 
 @dbs.route('/')
 def dbindex():
-    table_list = DBList().get_table_struct_for_mysql()
-    return table_list
+    try:
+        table_list = DBList().get_table_struct_for_mysql()
+        return {
+            "code": 100,
+            "data": table_list
+        }
+    except Exception as e:
+        print(e)
+        return {
+            "code": 99,
+            "data": "error"
+        }
