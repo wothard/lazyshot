@@ -2,30 +2,41 @@
   <div class="root">
     <div>
       <div id="start">start</div>
-      <div id="end" class="io">end</div>
+      <div class="io" id="end">end</div>
       <button @click="setLij()">shdi</button>
       <button @click.ctrl="shifd()">显示</button>
       <button @click.alt="hideds()">隐藏</button>
     </div>
     <div class="table-box">
       <div class="table-list-choice">
-        <div class="choice-item" v-for="item in 10" :key="item">
+        <div
+          :key="index"
+          @click="pickTables(true, item)"
+          class="choice-item"
+          v-for="(item, index) in backendTableLists"
+        >
           <img src="../assets/svg/cereal-table-svgrepo-com.svg" />
-          <span>{{ item +'hfg'}}</span>
+          <span>{{ item.name }}</span>
         </div>
       </div>
-      <div class="table-item">
-        <div
-          :id="'table-one'+ item"
-          class="table-key-box"
-          :class="pickUp == ('table-one'+ item)?'choice-color':'default-color'"
-          v-for="item in 10"
-          :key="item"
-          @click="setLineToConnect('table-one' + item, $event)"
-        >fsadfdsa</div>
-        <!-- @="setLineToRemove('table-one' + item)" -->
+      <!-- table info, for list -->
+      <div class="table-content">
+        <div :key="index" class="table-item" v-for="(item, index) in activeTableLists">
+          <div
+            :class="pickUp === indexStruct ? 'choice-color' : 'default-color'"
+            :id="'table-one' + structDetail.name"
+            :key="indexStruct"
+            @click="
+              setLineToConnect('table-one' + structDetail, $event, indexStruct)
+            "
+            class="table-key-box"
+            v-for="(structDetail, indexStruct) in item.struct"
+          >{{ structDetail.name }}</div>
+          <!-- @="setLineToRemove('table-one' + item)" -->
+        </div>
       </div>
-      <div class="table-item">
+
+      <!-- <div class="table-item">
         <div
           :id="'table-two'+ item"
           class="table-key-box"
@@ -34,17 +45,20 @@
           :key="item"
           @click="setLineToConnect('table-two' + item, $event)"
         >fsadfd343sa</div>
-      </div>
+      </div>-->
     </div>
   </div>
 </template>
 
 <script>
 import LeaderLine from 'leader-line-vue'
+import { getDBList } from '@/api/index'
 export default {
   name: 'Lazy',
   data() {
     return {
+      backendTableLists: [],
+      activeTableLists: [],
       line: LeaderLine,
       shitLine: undefined,
       shit: 0,
@@ -55,7 +69,7 @@ export default {
       },
       tempRemovePoint: 0,
       tempRemovePointName: '',
-      pickUp: '',
+      pickUp: -1,
       colorList: [
         'rgba(30, 130, 250, 0.5)',
         'rgba(253, 121, 168, 0.5)',
@@ -96,9 +110,25 @@ export default {
   },
   created() {
     console.log(LeaderLine)
+    this.$toastr.s('SUCCESS MESSAGE', 'Success Toast Title')
+    this.initTables()
     //   LeaderLine.setLine(this.$refs.start, this.$refs.end);
   },
   methods: {
+    initTables() {
+      getDBList().then((response) => {
+        this.backendTableLists = response.data
+      })
+    },
+    // 控制显示表
+    pickTables(e, q) {
+      console.log(q, '-0-0-')
+      if (e) {
+        this.activeTableLists.push(q)
+      } else {
+        this.activeTableLists.pop()
+      }
+    },
     setLij() {
       this.shitLine = this.line.setLine(
         document.getElementById('start'),
@@ -107,14 +137,14 @@ export default {
       )
       console.log(this.shitLine, '---')
       this.shit += 1
-      if (this.shit == 3) {
+      if (this.shit === 3) {
         this.line.remove()
       }
     },
-    setLineToConnect(e, b) {
+    setLineToConnect(e, b, indexStruct) {
       const ds = this.checkClickType(b)
       console.log(ds)
-      this.pickUp = e
+      this.pickUp = indexStruct
       if (this.tempSetPoint.start === undefined) {
         this.tempSetPoint.start = e
       } else {
@@ -124,13 +154,13 @@ export default {
           this.tempSetPoint.end = e
           console.log(this.tempSetPoint)
           var cocolor = this.colorList
-          let currentLine = LeaderLine.setLine(
+          const currentLine = LeaderLine.setLine(
             document.getElementById(this.tempSetPoint.start),
             document.getElementById(this.tempSetPoint.end),
             {
               hide: false,
               dash: { animation: true },
-              color: cocolor[Math.floor(Math.random()*cocolor.length)],
+              color: cocolor[Math.floor(Math.random() * cocolor.length)],
               endPlug: 'arrow3'
             }
           )
@@ -138,7 +168,7 @@ export default {
             this.tempSetPoint.start + this.tempSetPoint.end
           ] = currentLine
         }
-        this.pickUp = ''
+        this.pickUp = -1
         this.tempSetPoint = {
           startElement: undefined,
           endElement: undefined
@@ -150,7 +180,7 @@ export default {
       this.tempRemovePointName += e
       this.tempRemovePoint += 1
       if (this.tempRemovePoint === 2) {
-        if (this.lineObjList.hasOwnProperty(this.tempRemovePointName)) {
+        if (Object.prototype.hasOwnProperty.call(this.lineObjList, this.tempRemovePointNam)) {
           this.lineObjList[this.tempRemovePointName].remove()
         }
         this.tempRemovePointName = ''
@@ -195,7 +225,7 @@ export default {
   box-sizing: border-box;
   background-color: #f3f2ef;
   padding: 10px;
-  height: 80vh;
+  min-height: 80vh;
   border-radius: 5px;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.19);
   display: flex;
@@ -203,12 +233,13 @@ export default {
   .table-list-choice {
     height: 100%;
     background: #fff;
-    box-shadow: 0 6px 8px rgba(85,102,119,.03), 0 1px 1px rgba(85,102,119,.8);
+    box-shadow: 0 6px 8px rgba(85, 102, 119, 0.03),
+      0 1px 1px rgba(85, 102, 119, 0.8);
     margin-right: 20px;
     .choice-item {
       cursor: pointer;
       padding: 5px;
-      border-top: solid 1px rgba(85,102,119,.18);
+      border-top: solid 1px rgba(85, 102, 119, 0.18);
       display: flex;
       align-items: center;
       img {
@@ -221,18 +252,23 @@ export default {
       }
     }
   }
-  .table-item {
-    padding: 10px;
-    width: 120px;
-    box-shadow: 0 8px 33px 0 rgba(30, 35, 42, 0.16);
-    border-radius: 4px;
-    margin-right: 90px;
-    .table-key-box {
-      cursor: pointer;
-      margin: 8px 0;
-      padding: 4px;
-      border: 1px solid transparent;
-      border-radius: 0.25rem;
+  .table-content {
+    display: flex;
+    flex-wrap: wrap;
+    .table-item {
+      padding: 10px;
+      min-width: 120px;
+      box-shadow: 0 8px 33px 0 rgba(30, 35, 42, 0.16);
+      border-radius: 4px;
+      margin-right: 90px;
+      margin-bottom: 50px;
+      .table-key-box {
+        cursor: pointer;
+        margin: 8px 0;
+        padding: 4px;
+        border: 1px solid transparent;
+        border-radius: 0.25rem;
+      }
     }
   }
 }
