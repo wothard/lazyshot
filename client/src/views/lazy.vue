@@ -1,9 +1,6 @@
 <template>
   <div class="root">
     <div>
-      <div id="start">start</div>
-      <div class="io" id="end">end</div>
-      <button @click="setLij()">shdi</button>
       <button @click.ctrl="shifd()">显示</button>
       <button @click.alt="hideds()">隐藏</button>
     </div>
@@ -11,7 +8,7 @@
       <div class="table-list-choice">
         <div
           :key="index"
-          @click="pickTables(true, item)"
+          @click="pickTables(item)"
           class="choice-item"
           v-for="(item, index) in backendTableLists"
         >
@@ -22,12 +19,16 @@
       <!-- table info, for list -->
       <div class="table-content">
         <div :key="index" class="table-item" v-for="(item, index) in activeTableLists">
+          <div class="table-name">
+            <div class="name-point"></div>
+            <span>{{item.name}}</span>
+          </div>
           <div
-            :class="pickUp === indexStruct ? 'choice-color' : 'default-color'"
-            :id="'table-one' + structDetail.name"
+            :class="pickUp.name === (item.name + structDetail.name) ? 'choice-color' : 'default-color'"
+            :id="item.name + structDetail.name"
             :key="indexStruct"
             @click="
-              setLineToConnect('table-one' + structDetail, $event, indexStruct)
+              setLineToConnect(item.name + structDetail.name, item.name, $event)
             "
             class="table-key-box"
             v-for="(structDetail, indexStruct) in item.struct"
@@ -59,6 +60,8 @@ export default {
     return {
       backendTableLists: [],
       activeTableLists: [],
+      activeTableNameLists: [],
+      isSameTableFeild: '', // 是否两次选中同一个表
       line: LeaderLine,
       shitLine: undefined,
       shit: 0,
@@ -69,7 +72,10 @@ export default {
       },
       tempRemovePoint: 0,
       tempRemovePointName: '',
-      pickUp: -1,
+      pickUp: {
+        name: '',
+        count: 0
+      },
       colorList: [
         'rgba(30, 130, 250, 0.5)',
         'rgba(253, 121, 168, 0.5)',
@@ -109,8 +115,9 @@ export default {
     }
   },
   created() {
-    console.log(LeaderLine)
-    this.$toastr.s('SUCCESS MESSAGE', 'Success Toast Title')
+    // console.log(LeaderLine)
+    // this.$toastr.s('SUCCESS MESSAGE', 'Success Toast Title')
+    // console.log(this.$toastr)
     this.initTables()
     //   LeaderLine.setLine(this.$refs.start, this.$refs.end);
   },
@@ -121,12 +128,14 @@ export default {
       })
     },
     // 控制显示表
-    pickTables(e, q) {
-      console.log(q, '-0-0-')
-      if (e) {
-        this.activeTableLists.push(q)
+    pickTables(q) {
+      const spliceIndex = this.activeTableNameLists.indexOf(q.name)
+      if (spliceIndex !== -1) {
+        this.activeTableLists.splice(spliceIndex, 1)
+        this.activeTableNameLists.splice(spliceIndex, 1)
       } else {
-        this.activeTableLists.pop()
+        this.activeTableLists.push(q)
+        this.activeTableNameLists.push(q.name)
       }
     },
     setLij() {
@@ -141,34 +150,39 @@ export default {
         this.line.remove()
       }
     },
-    setLineToConnect(e, b, indexStruct) {
-      const ds = this.checkClickType(b)
-      console.log(ds)
-      this.pickUp = indexStruct
-      if (this.tempSetPoint.start === undefined) {
-        this.tempSetPoint.start = e
-      } else {
-        if (e === this.tempSetPoint.start) {
-          console.log('不能连接自己')
-        } else {
-          this.tempSetPoint.end = e
-          console.log(this.tempSetPoint)
-          var cocolor = this.colorList
-          const currentLine = LeaderLine.setLine(
-            document.getElementById(this.tempSetPoint.start),
-            document.getElementById(this.tempSetPoint.end),
-            {
-              hide: false,
-              dash: { animation: true },
-              color: cocolor[Math.floor(Math.random() * cocolor.length)],
-              endPlug: 'arrow3'
-            }
-          )
-          this.lineObjList[
-            this.tempSetPoint.start + this.tempSetPoint.end
-          ] = currentLine
+    setLineToConnect(name, pname, ent) {
+      this.checkPicked(name)
+      if (this.checkSameTable(pname)) {
+        this.isSameTableFeild = ''
+        this.tempSetPoint = {
+          startElement: undefined,
+          endElement: undefined
         }
-        this.pickUp = -1
+        this.$toastr.w('WARN', '暂不支持表内自连接')
+        return
+      }
+      // this.checkSameTable(pname)
+      // const ds = this.checkClickType(ent)
+      // console.log(ds)
+      if (this.tempSetPoint.start === undefined) {
+        this.tempSetPoint.start = name
+      } else {
+        this.tempSetPoint.end = name
+        console.log(this.tempSetPoint)
+        var cocolor = this.colorList
+        const currentLine = LeaderLine.setLine(
+          document.getElementById(this.tempSetPoint.start),
+          document.getElementById(this.tempSetPoint.end),
+          {
+            hide: false,
+            dash: { animation: true },
+            color: cocolor[Math.floor(Math.random() * cocolor.length)],
+            endPlug: 'arrow3'
+          }
+        )
+        this.lineObjList[
+          this.tempSetPoint.start + this.tempSetPoint.end
+        ] = currentLine
         this.tempSetPoint = {
           startElement: undefined,
           endElement: undefined
@@ -180,7 +194,12 @@ export default {
       this.tempRemovePointName += e
       this.tempRemovePoint += 1
       if (this.tempRemovePoint === 2) {
-        if (Object.prototype.hasOwnProperty.call(this.lineObjList, this.tempRemovePointNam)) {
+        if (
+          Object.prototype.hasOwnProperty.call(
+            this.lineObjList,
+            this.tempRemovePointNam
+          )
+        ) {
           this.lineObjList[this.tempRemovePointName].remove()
         }
         this.tempRemovePointName = ''
@@ -202,6 +221,29 @@ export default {
         return 'right'
       } else {
         return 'none'
+      }
+    },
+    // 控制选中表格colum
+    checkPicked(name) {
+      this.pickUp.name = name
+      this.pickUp.count += 1
+      if (this.pickUp.count === 2) {
+        setTimeout(() => {
+          this.pickUp = {
+            name: '',
+            count: 0
+          }
+        }, 400)
+      }
+    },
+    // 判断是否选中同一个表
+    checkSameTable(pname) {
+      console.log(this.isSameTableFeild, '0000>>', pname)
+      if (this.isSameTableFeild === pname) {
+        return true
+      } else {
+        this.isSameTableFeild = pname
+        return false
       }
     }
   }
@@ -243,12 +285,13 @@ export default {
       display: flex;
       align-items: center;
       img {
-        width: 16px;
-        height: 16px;
+        width: 46px;
+        height: 46px;
       }
       span {
         padding-left: 10px;
-        font-size: 14px;
+        font-size: 20px;
+        min-width: 80px;
       }
     }
   }
@@ -268,6 +311,23 @@ export default {
         padding: 4px;
         border: 1px solid transparent;
         border-radius: 0.25rem;
+      }
+      .table-name {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        .name-point {
+          margin-right: 10px;
+          width: 8px;
+          height: 8px;
+          background: #77dab2;
+          border-radius: 50%;
+        }
+        span {
+          font-weight: bold;
+          font-size: 26px;
+        }
       }
     }
   }
