@@ -62,7 +62,7 @@ class DBList():
             data = cur.fetchall()
             # set back table struct
             table_item = {
-                "name": 'shit',
+                "name": table_one[0],
                 "struct": []
             }
             for i in data:
